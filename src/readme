@@ -1,0 +1,280 @@
+public enum PriorityLevel {
+    PREMIUM,
+    STANDARD,
+    LOW;
+}
+
+public interface Executable {
+    void execute();
+}
+public class Campaign implements Executable{
+    private int id;
+    private String name;
+    private PriorityLevel priority;
+    private int duration;
+    private String type;
+
+    public Campaign(int id, String name, PriorityLevel priority, int duration, String type) {
+        this.id = id;
+        this.name = name;
+        this.priority = priority;
+        this.duration = duration;
+        this.type = type;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setPriority(PriorityLevel priority) {
+        this.priority = priority;
+    }
+
+    public PriorityLevel getPriority() {
+        return priority;
+    }
+
+    public void setDuration(int duration) {
+        this.duration = duration;
+    }
+
+    public int getDuration() {
+        return duration;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void execute() {
+        System.out.println("Executing Campaign " + name + " Priority is [" + priority + "]");
+    }
+    
+    public String toString() {
+        return id + " - " + name + " [" + priority + "] (" + duration + "s, " + type + ")";
+    }
+
+}
+
+import java.util.ArrayList;
+
+public class Worker {
+    private int id;
+    private String name;
+    private int coresavailable;
+
+    public Worker(int id, String name, int coresavailable) {
+        this.id = id;
+        this.name = name;
+        this.coresavailable = coresavailable;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getCoresavailable() {
+        return coresavailable;
+    }
+
+    private ArrayList<Campaign> currentTasks = new ArrayList<>();
+
+    public boolean isAvailable() {
+        if (currentTasks.size() < coresavailable) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public void assignCampaign(Campaign campaign) {
+        currentTasks.add(campaign);
+        System.out.println("Assigned " + campaign + " to " + name);
+    }
+
+    public ArrayList<Campaign> getCurrentTasks() {
+        return currentTasks;
+    }
+
+    public String toString() {
+        return id + " - " + name + " (Cores: " + coresavailable + ")";
+    }
+
+}
+import java.util.ArrayList;
+import java.util.PriorityQueue;
+import java.util.Comparator;
+
+public class CampaignScheduler {
+    private PriorityQueue<Campaign> campaignQueue;
+    private ArrayList<Worker> workers;
+
+    public CampaignScheduler(ArrayList<Campaign> campaigns, ArrayList<Worker> workers) {
+        this.workers = workers;
+
+        campaignQueue = new PriorityQueue<>(new Comparator<Campaign>() {
+            public int compare(Campaign c1, Campaign c2) {
+                return c1.getPriority().ordinal() - c2.getPriority().ordinal();
+            }
+        });
+        campaignQueue.addAll(campaigns);
+    }
+    
+    public Worker findAvailableWorker() {
+        for (Worker worker : workers) {
+            if (worker.isAvailable()) {
+                return worker;
+            }
+        }
+        return null;
+    }
+
+    public void scheduleCampaigns() {
+        while (!campaignQueue.isEmpty()) {
+            Campaign campaign = campaignQueue.poll();
+            Worker availableWorker = findAvailableWorker();
+
+            if (availableWorker != null) {
+                availableWorker.assignCampaign(campaign);
+                campaign.execute();
+            }
+            else {
+                System.out.println("No available Workers for " + campaign.getName());
+            }
+        }
+    }
+}
+import java.util.ArrayList;
+
+public class CRMsystem {
+    private ArrayList<Campaign> campaigns;
+    private ArrayList<Worker> workers;
+
+    public CRMsystem() {
+        campaigns = new ArrayList<>();
+        workers = new ArrayList<>();
+    }
+
+    public void addWorker(Worker worker) {
+        workers.add(worker);
+    }
+
+    public void addCampaign(Campaign campaign) {
+        campaigns.add(campaign);
+    }
+    
+    public void execution() {
+        CampaignScheduler scheduler = new CampaignScheduler(campaigns, workers);
+        scheduler.scheduleCampaigns();
+    }
+
+    public void workerSummarry() {
+        System.out.println("Workers Summary");
+        for (Worker worker : workers) {
+            System.out.println(worker.getName()+" is Assigned to "+worker.getCurrentTasks());
+        }
+    }
+}
+import java.util.Scanner;
+
+public class Main {
+    public static void main(String[] args) {
+        CRMSystem crm = new CRMSystem();
+        Scanner sc = new Scanner(System.in);
+
+        while (true) {
+            System.out.println("\n=== Menu ===");
+            System.out.println("1. Add Campaign");
+            System.out.println("2. Add Worker");
+            System.out.println("3. Execute");
+            System.out.println("4. Summary");
+            System.out.println("5. Exit");
+            System.out.print("Enter your choice: ");
+            int choice = sc.nextInt();
+            sc.nextLine();
+
+            switch (choice) {
+                case 1:
+                    System.out.print("Enter Campaign ID: ");
+                    int id = sc.nextInt();
+                    sc.nextLine();
+
+                    System.out.print("Enter Campaign Name: ");
+                    String name = sc.nextLine();
+
+                    System.out.print("Enter Campaign Priority (PREMIUM, STANDARD, LOW): ");
+                    String priorityInput = sc.nextLine().toUpperCase();
+                    PriorityLevel priority = PriorityLevel.valueOf(priorityInput);
+
+                    System.out.print("Enter Campaign Duration (in seconds): ");
+                    int duration = sc.nextInt();
+                    sc.nextLine();
+
+                    System.out.print("Enter Campaign Type (e.g., Email/SMS/Push): ");
+                    String type = sc.nextLine();
+
+                    Campaign campaign = new Campaign(id, name, priority, duration, type);
+                    crm.addCampaign(campaign);
+                    System.out.println("Campaign added.");
+                    break;
+
+                case 2:
+                    System.out.print("Enter Worker ID: ");
+                    int wid = sc.nextInt();
+                    sc.nextLine();
+
+                    System.out.print("Enter Worker Name: ");
+                    String wname = sc.nextLine();
+
+                    System.out.print("Enter No. of Available Cores: ");
+                    int cores = sc.nextInt();
+                    sc.nextLine();
+
+                    crm.addWorker(new Worker(wid, wname, cores));
+                    System.out.println("Worker added.");
+                    break;
+
+                case 3:
+                    System.out.println("Executing Campaign Scheduler...");
+                    crm.execution();
+                    break;
+
+                case 4:
+                    crm.workerSummary();
+                    break;
+
+                case 5:
+                    System.out.println("Exiting CRM System...");
+                    sc.close();
+                    return;
+
+                default:
+                    System.out.println("Invalid choice. Try again.");
+                    break;
+            }
+        }
+    }
+}
+
+
+
